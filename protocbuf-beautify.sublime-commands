@@ -1,0 +1,26 @@
+[
+  // { "caption": "Preferences: protocbuf-beautify",
+  //   "command": "edit_settings",
+  //   "args": {
+  //     "base_file": "${packages}/protocbuf-beautify/protocbuf-beautify.sublime-settings",
+  //     "default": "{\n\t$0\n}\n"
+  //   }
+  // },
+  // { "caption": "Preferences: protocbuf-beautify Key Bindings",
+  //   "command": "edit_settings",
+  //   "args": {
+  //     "base_file": "${packages}/protocbuf-beautify/Default (${platform}).sublime-keymap",
+  //     "default": "[\n\t$0\n]\n"
+  //   }
+  // },
+  // { "caption": "protocbuf-beautify: Open Readme",
+  //   "command": "open_file",
+  //   "args": {
+  //     "file": "${packages}/protocbuf-beautify/README.md"
+  //   }
+  // },
+  {
+    	"caption": "Format Protoc Buffer",
+    	"command": "pb_beautify"
+   }
+]
