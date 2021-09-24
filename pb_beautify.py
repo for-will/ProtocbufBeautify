@@ -21,24 +21,33 @@ except (ImportError) as e:
 	
 try:
 	from formatter import format_proto
+	from auto_number import number_lines
 except (ImportError) as e:
 	from .formatter import format_proto
+	from .auto_number import number_lines
+
 
 class PbBeautifyCommand(sublime_plugin.TextCommand):
-	def run(self, edit):
+	def run(self, edit, reassign_num=False):
 		# self.view.insert(edit, 0, "Hello, World!\n")
 		# self.view.insert(edit, 0, "Hello, World!")
+		for region in self.view.sel():
+			if region.a != region.b:
+				sel_content = self.view.substr(region)
+				formated = format_proto(sel_content, True)
+				self.view.replace(edit, region, formated)
+				return
 	
-		self.reindent_protoc(edit)
+		self.reindent_protoc(edit, reassign_num)
 		for region in self.view.sel():
 			self.view.show(region.a, True, True)
 			self.view.show_at_center(region.a)
 			break	
 
-	def reindent_protoc(self, edit):
+	def reindent_protoc(self, edit, reassign_num):
 		region = sublime.Region(0, self.view.size())
 		view_content = self.view.substr(region)
-		formated = format_proto(view_content)
+		formated = format_proto(view_content, reassign_num)
 		self.view.replace(edit, region, formated)
 
 	def reindent_enum(self, edit):
@@ -56,3 +65,13 @@ class PbBeautifyCommand(sublime_plugin.TextCommand):
 			origin = self.view.substr(r)
 			formated = format_proto(origin)
 			self.view.replace(edit, r, formated)
+
+
+class AutoNumberLinesCommand(sublime_plugin.TextCommand):
+	def run(self, edit):
+		for region in self.view.sel():
+			if region.a != region.b:
+				sel_content = self.view.substr(region)
+				formated = number_lines(sel_content)
+				self.view.replace(edit, region, formated)
+				return

@@ -1,8 +1,6 @@
 import sys
 import json
 
-# sys.path.append("six")
-
 from parsimonious.grammar import Grammar
 from parsimonious.nodes import NodeVisitor
 
@@ -141,8 +139,15 @@ class ProtobufVisitor(NodeVisitor):
 
 
 
-def format_enum(st, indent=''):
+def format_enum(st, indent='', assign_num=False):
 	entries = st['entries']
+	if assign_num:
+		idx = 1
+		for e in entries:
+			if e['type'] == 'enum_entry':
+				e['number'] = idx
+				idx = idx+1
+
 	maxl = max([len(x['name']) for x in entries if x['type']=='enum_entry'])
 	fmt = "\t%%-%ds = %%d;" % (maxl)
 	for x in st['entries']:
@@ -164,8 +169,16 @@ def format_enum(st, indent=''):
 	lines = ["enum {} {{".format(st['name'])] + [x['text'] for x in entries] +  ["}"]
 	return "\n".join([indent+x for x in lines])
 
-def format_message(st, indent=''):
+def format_message(st, indent='', assign_num=False):
 	entries = st['entries']
+
+	if assign_num:
+		idx = 1
+		for e in entries:
+			if e['type'] == 'message_entry':
+				e['number'] = idx
+				idx = idx + 1
+
 	name_len = max([len(x['name']) for x in entries if x['type']=='message_entry']+[0])
 	type_len = max([len(x['field_type']) for x in entries if x['type']=='message_entry']+[0])
 	fmt = "\t%%s %%-%ds %%-%ds = %%d;" % (type_len, name_len)
@@ -196,7 +209,7 @@ def format_message(st, indent=''):
 	return "\n".join(lines)
 
 	
-def format_proto(source):
+def format_proto(source, assign_num=False):
 	ast = pb_grammar.parse(source)
 	pbv = ProtobufVisitor()
 	out_put = pbv.visit(ast)
@@ -208,9 +221,9 @@ def format_proto(source):
 		if t == 'message':
 			# print(format_message(e))
 			# print(e)
-			blocks.append(format_message(e))
+			blocks.append(format_message(e, '', assign_num))
 		elif t == 'enum':
-			blocks.append(format_enum(e))
+			blocks.append(format_enum(e, '', assign_num))
 		elif t == 'empty':
 			blocks.append("")
 		elif t == 'comm_line':
@@ -224,17 +237,24 @@ def format_proto(source):
 	return "\n".join(blocks)
 
 
-text = """message LootMission {
-    enum Status {
-        Processing   = 0;
-        Finished = 1;
-        Rewarded = 2;
-    }
-
-    optional int32  Id            = 1; 
-    optional Status State        = 2; 
-    optional int32  Progress      = 3; // 当前完成数量
-    optional int32  CompletedTime = 4; 
+text = """message DeviceInfo {
+    optional string DeviceModel  = 1;  // 设备型号
+    optional int32  DeviceHeight = 2;  //
+    optional int32  DeviceWidth  = 3;  //
+    optional string OsName       = 4;  // 操作系统
+    optional string OsVer        = 5;  // 操作系统版本
+    optional string MacAddr      = 6;  // 设备mac地址
+    optional string Udid         = 5;  // 设备唯一标示符
+    optional string Idfa         = 5;  // 广告标识
+    optional string AppChannel   = 9;  // 运营渠道
+    optional string AppVer       = 10; // 客户端版本号
+    optional string Server       = 11; // 游戏服
+    optional string AccountId    = 12; // 账号唯一标识符
+    optional string OldAccountId = 13; // 游客身份标识符
+    optional string RoleId       = 14; // 角色唯一标识符
+    optional string RoleName     = 15; //
+    optional string SdkVer       = 16; // SDK版本号
+    optional string IMEI         = 1; // 移动设备国际身份码
 }"""
 
 if __name__ == '__main__':
@@ -244,4 +264,4 @@ if __name__ == '__main__':
 	out_put = pbv.visit(ast)
 	print(json.dumps(out_put, indent='\t'))
 
-	print(format_proto(text))
+	print(format_proto(text, True))

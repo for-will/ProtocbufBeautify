@@ -22,5 +22,14 @@
   {
     	"caption": "Format Protoc Buffer",
     	"command": "pb_beautify"
-   }
+  },
+  {
+      "caption": "Assign Protoc Buffer Fields Number",
+      "command": "pb_beautify",
+      "args": {"reassign_num":true}
+  },
+  {
+      "caption": "Auto Number Lines",
+      "command": "auto_number_lines",
+  }
 ]
