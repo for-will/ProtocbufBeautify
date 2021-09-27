@@ -6,7 +6,7 @@ from parsimonious.nodes import NodeVisitor
 
 pb_grammar = Grammar(
 	r"""
-	lines                = (muti_emptyline / emptyline / equal_line / other)*
+	lines                = (muti_emptyline / emptyline / comment / equal_line / other)*
 
 	equal_line           = equal_left "=" optional_number after_number
 
@@ -76,7 +76,7 @@ class ProtobufVisitor(NodeVisitor):
 		return node.text
 
 	def visit_orphan_comm_line(self, node, visited_children):
-		return {"type":"comm_line", "comm_line": visited_children[1]}
+		return {"type":"comm_line", "comm_line": node.text}
 
 	def visit_comment(self, node, visited_children):
 		# print(node, visited_children)
@@ -97,7 +97,6 @@ class ProtobufVisitor(NodeVisitor):
 		return int(node.text)
 
 
-
 def number_lines(s):
 	ast = pb_grammar.parse(s)
 	pbv = ProtobufVisitor()
@@ -113,6 +112,8 @@ def assign_line_number(lines):
 				idx = l['number']
 			l['text'] = l['left'] + "= " + str(idx) + l['right']
 			idx = idx+1
+		if l['type'] == 'comm_line':
+			l['text'] = l['comm_line']
 
 	lines =  [x['text'] for x in lines] 
 	return "\n".join(lines)
@@ -130,7 +131,7 @@ text = """message DeviceInfo {
 }
 message SdkLoginRs {
     optional ReturnCode ReturnCode      = 10;
-    optional int32      Code            = 2;
+    //optional int32      Code            = 2;
     optional int32      SubCode         = 3;
     optional string     UnisdkLoginJson = 4;
     optional string     LoginSessionId  = 5; // 游戏服务器返回的LoginSessionId，用于断线重连
@@ -144,6 +145,6 @@ if __name__ == '__main__':
 	# for l in out_put:
 	# 	print(l)
 	print(json.dumps(out_put, indent='\t'))
-	print(number_lines(out_put))
+	print(number_lines(text))
 
 	# print(format_proto(text, True))
