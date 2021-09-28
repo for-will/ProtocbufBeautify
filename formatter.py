@@ -14,9 +14,10 @@ pb_grammar = Grammar(
 	eentry               = none_or_ws ident equal number semi option_comm_line
 
 	message              = mdeclare ident none_or_ws option_comm_line lbrace mbody_seq rbrace	
-	mdeclare             = none_or_ws "message" must_ws_inline
-	mbody_seq            = (muti_emptyline / emptyline / comment / enum / mentry)*
-	mentry               = none_or_ws mmodifier ident must_ws_inline ident equal number semi option_comm_line
+	mdeclare             = none_or_ws ("message"/"oneof") must_ws_inline
+	mbody_seq            = (muti_emptyline / emptyline / comment / enum / message / mentry)*
+	mentry               = none_or_ws option_mmodifier ident must_ws_inline ident equal number semi option_comm_line
+	option_mmodifier     = mmodifier?
 	mmodifier            = none_or_ws ("optional"/"repeated"/"required") must_ws_inline
 
 	other                = ~r".*"
@@ -81,12 +82,18 @@ class ProtobufVisitor(NodeVisitor):
 	# visit message
 	def visit_message(self, node, visited_children):
 		# mdeclare ident none_or_ws option_comm_line lbrace mbody_seq rbrace
+		# print(visited_children[0])
 		return {
-		"type":"message", 
-		"name":visited_children[1], 
-		"comm":visited_children[3],
-		"entries":visited_children[5]
+			"type":"message", 
+			"name":visited_children[1], 
+			"comm":visited_children[3],
+			"entries":visited_children[5],
+			"oneof":visited_children[0]=='oneof',
 		}
+
+	def visit_mdeclare(self, node, visited_children):
+		# print(visited_children[1][0].text)
+		return visited_children[1][0].text
 
 	def visit_mbody_seq(self, node, visited_children):
 		return [x[0] for x in visited_children if x[0] is not None]
@@ -104,6 +111,10 @@ class ProtobufVisitor(NodeVisitor):
 			"comm":comment
 		}
 		return entry
+
+	def visit_option_mmodifier(self, node, visited_children):
+		visited_children.append('')
+		return visited_children[0]
 
 	def visit_mmodifier(self, node, visited_children):
 		return visited_children[1][0].text
@@ -154,9 +165,9 @@ def format_enum(st, indent='', assign_num=False):
 		if x['type'] == 'enum_entry':
 			name = x['name']
 			number = x['number']
-			x['text'] = fmt % (name, number)
+			x['text'] = indent + fmt % (name, number)
 		elif x['type'] == 'comm_line':
-			x['text'] = '\t' + x['comm_line']
+			x['text'] = indent + '\t' + x['comm_line']
 
 
 	maxl = max([len(x['text']) for x in entries if x['type']=='enum_entry'])
@@ -166,8 +177,8 @@ def format_enum(st, indent='', assign_num=False):
 			text = fmt % (x['text'], x['comm'])
 			x['text'] = text.rstrip()
 
-	lines = ["enum {} {{".format(st['name'])] + [x['text'] for x in entries] +  ["}"]
-	return "\n".join([indent+x for x in lines])
+	lines = [indent + "enum {} {{".format(st['name'])] + [x['text'] for x in entries] +  [indent + "}"]
+	return "\n".join(lines)
 
 def format_message(st, indent='', assign_num=False):
 	entries = st['entries']
@@ -179,20 +190,26 @@ def format_message(st, indent='', assign_num=False):
 				e['number'] = idx
 				idx = idx + 1
 
+	modifier_len = max([len(x['modifier']) for x in entries if x['type']=='message_entry']+[0])
 	name_len = max([len(x['name']) for x in entries if x['type']=='message_entry']+[0])
 	type_len = max([len(x['field_type']) for x in entries if x['type']=='message_entry']+[0])
-	fmt = "\t%%s %%-%ds %%-%ds = %%d;" % (type_len, name_len)
+	modifier_len = modifier_len+1 if modifier_len>0 else 0
+	fmt = "\t%%-%ds%%-%ds %%-%ds = %%d;" % (modifier_len, type_len, name_len)
 	for x in st['entries']:
 		if x['type'] == 'message_entry':
 			modifier = x['modifier']
 			name = x['name']
 			field_type = x['field_type']
 			number = x['number']
-			x['text'] = fmt % (modifier, field_type, name, number)
+			x['text'] = indent + fmt % (modifier, field_type, name, number)
 		elif x['type'] == 'comm_line':
-			x['text'] = '\t' + x['comm_line']
+			x['text'] = indent + '\t' + x['comm_line']
 		elif x['type'] == 'enum':
 			x['text'] = format_enum(x, indent+'\t')
+		elif x['type'] == 'message':
+			x['text'] = format_message(x, indent+'\t')
+			# print("formated message:")
+			# print(x['text'])
 
 
 	maxl = max([len(x['text']) for x in entries if x['type']=='message_entry']+[0])
@@ -202,10 +219,11 @@ def format_message(st, indent='', assign_num=False):
 			text = fmt % (x['text'], x['comm'])
 			x['text'] = text.rstrip() 
 
-	lines = ["message {} {{".format(st['name'])]
+	typ = 'oneof' if st['oneof'] else 'message'
+	lines = [indent + "{} {} {{".format(typ, st['name'])]
 	if st['comm'] != "":
-		lines.insert(0, st['comm'])
-	lines += [x['text'] for x in entries] +  ["}"]
+		lines.insert(0, indent+st['comm'])
+	lines += [x['text'] for x in entries] +  [indent+"}"]
 	return "\n".join(lines)
 
 	
@@ -237,24 +255,24 @@ def format_proto(source, assign_num=False):
 	return "\n".join(blocks)
 
 
-text = """message DeviceInfo {
-    optional string DeviceModel  = 1;  // 设备型号
-    optional int32  DeviceHeight = 2;  //
-    optional int32  DeviceWidth  = 3;  //
-    optional string OsName       = 4;  // 操作系统
-    optional string OsVer        = 5;  // 操作系统版本
-    optional string MacAddr      = 6;  // 设备mac地址
-    optional string Udid         = 5;  // 设备唯一标示符
-    optional string Idfa         = 5;  // 广告标识
-    optional string AppChannel   = 9;  // 运营渠道
-    optional string AppVer       = 10; // 客户端版本号
-    optional string Server       = 11; // 游戏服
-    optional string AccountId    = 12; // 账号唯一标识符
-    optional string OldAccountId = 13; // 游客身份标识符
-    optional string RoleId       = 14; // 角色唯一标识符
-    optional string RoleName     = 15; //
-    optional string SdkVer       = 16; // SDK版本号
-    optional string IMEI         = 1; // 移动设备国际身份码
+text = """message Request {
+
+    
+
+    message LootInfo {      
+        oneof nested2 {	        
+	         int32  Id   = 1;
+	         string Name = 2;
+    	}
+    	int32  Id   = 1;
+         string Name = 2;
+    }
+    enum ExploreTimes {
+    Single = 1; // 探索一次
+    Ten    = 2; // 探索10次
+}
+	optional ReturnCode ReturnCode = 4;
+    optional LootInfo loot_info = 5;
 }"""
 
 if __name__ == '__main__':
@@ -262,6 +280,6 @@ if __name__ == '__main__':
 	ast = pb_grammar.parse(text)
 	pbv = ProtobufVisitor()
 	out_put = pbv.visit(ast)
-	print(json.dumps(out_put, indent='\t'))
+	# print(json.dumps(out_put, indent='\t'))
 
 	print(format_proto(text, True))
