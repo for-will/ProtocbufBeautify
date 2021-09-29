@@ -1,3 +1,4 @@
 [
 	{ "keys": ["ctrl+alt+l"], "command": "pb_beautify", },
+	{ "keys": ["ctrl+alt+i"], "command": "auto_number_lines" },	
 ]

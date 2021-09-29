@@ -75,3 +75,4 @@ class AutoNumberLinesCommand(sublime_plugin.TextCommand):
 				formated = number_lines(sel_content)
 				self.view.replace(edit, region, formated)
 				return
+				

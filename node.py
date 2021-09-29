@@ -104,6 +104,7 @@ class Node(object):
 	def build_text(self, fmt=''):
 		if self.type == NodeType.ENUM_ENTRY:
 			self._text = fmt % (self.name, self.number)
+
 		elif self.type == NodeType.MESSAGE_ENTRY:
 			modifier = self.modifier
 			name = self.name
@@ -111,6 +112,7 @@ class Node(object):
 			number = self.number
 			if modifier != '': field_type = modifier + ' ' + field_type
 			self._text = fmt % (field_type, name, number)
+
 		elif self.type == NodeType.COMM_LINE:
 			self._text = self._comm
 
@@ -132,6 +134,13 @@ class Node(object):
 		else:
 			return []
 
+	def renumber(self):
+		idx = 1
+		for e in self.children:
+			if e.type == NodeType.MESSAGE_ENTRY or e.type == NodeType.ENUM_ENTRY:
+				e.set_number(idx)
+				idx += 1
+
 	def to_json(self):
 		return json.dumps(self.dict, indent='\t')
 
@@ -148,22 +157,43 @@ class NodeType():
 	COMM_LINE     = 5
 	TEXT          = 6
 
+
+class EnumVal():
+	def __init__(self, name, val):
+		self._name = name
+		self._val = val
+
 	@property
 	def name(self):
-		return 'aaa'
+		return self._name
 
 	@property
-	def TEXT():
-		return 11
+	def val(self):
+		return self._val
 
+	def __str__(self):
+		return self.name
+
+def build_enum(cls):
+	for attr in dir(cls):
+		v = getattr(cls, attr)
+		if type(v) == int:
+			setattr(cls, attr, EnumVal(attr, v))
+
+build_enum(NodeType)
 
 def main():
+	build_enum(NodeType)
 	# n = Node(Node.MESSAGE)
 	# n = Node.NewEnum('ReturnCode', [])
-	# n = Node.NewEnumEntry('Ok', 3, '//okkk')
-	# print(n)
-	a = NodeType.TEXT
-	# print(help(Enum))
+	n = Node.NewEnumEntry('Ok', 3, '//okkk')
+	print(n)
+
+	# print(help(t))
+	# print(dir(EntryType))
+	# print(getattr(EntryType, 'MESSAGE'))
+
+	# print(type(EntryType.MESSAGE)==int)
 
 if __name__ == '__main__':
 	main()
