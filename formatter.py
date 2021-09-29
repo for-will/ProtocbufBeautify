@@ -160,14 +160,14 @@ def format_enum(st, indent='', assign_num=False):
 				idx = idx+1
 
 	maxl = max([len(x['name']) for x in entries if x['type']=='enum_entry'])
-	fmt = "\t%%-%ds = %%d;" % (maxl)
+	fmt = "%%-%ds = %%d;" % (maxl)
 	for x in st['entries']:
 		if x['type'] == 'enum_entry':
 			name = x['name']
 			number = x['number']
-			x['text'] = indent + fmt % (name, number)
+			x['text'] = fmt % (name, number)
 		elif x['type'] == 'comm_line':
-			x['text'] = indent + '\t' + x['comm_line']
+			x['text'] = x['comm_line']
 
 
 	maxl = max([len(x['text']) for x in entries if x['type']=='enum_entry'])
@@ -177,7 +177,8 @@ def format_enum(st, indent='', assign_num=False):
 			text = fmt % (x['text'], x['comm'])
 			x['text'] = text.rstrip()
 
-	lines = [indent + "enum {} {{".format(st['name'])] + [x['text'] for x in entries] +  [indent + "}"]
+	content = '\n'.join([x['text'] for x in entries])
+	lines = ["enum {} {{".format(st['name'])] + ['\t'+l if l!='' else '' for l in content.split('\n')] +  ["}"]
 	return "\n".join(lines)
 
 def format_message(st, indent='', assign_num=False):
@@ -192,25 +193,25 @@ def format_message(st, indent='', assign_num=False):
 
 	modifier_len = max([len(x['modifier']) for x in entries if x['type']=='message_entry']+[0])
 	name_len = max([len(x['name']) for x in entries if x['type']=='message_entry']+[0])
-	type_len = max([len(x['field_type']) for x in entries if x['type']=='message_entry']+[0])
-	modifier_len = modifier_len+1 if modifier_len>0 else 0
-	fmt = "\t%%-%ds%%-%ds %%-%ds = %%d;" % (modifier_len, type_len, name_len)
+	type_len = max([len(x['field_type']+x['modifier']) for x in entries if x['type']=='message_entry']+[0])
+	# modifier_len = modifier_len+1 if modifier_len>0 else 0
+	if modifier_len>0: type_len = type_len+1
+	fmt = "%%-%ds %%-%ds = %%d;" % (type_len, name_len)
+	print(fmt, modifier_len, type_len)
 	for x in st['entries']:
 		if x['type'] == 'message_entry':
 			modifier = x['modifier']
 			name = x['name']
 			field_type = x['field_type']
 			number = x['number']
-			x['text'] = indent + fmt % (modifier, field_type, name, number)
+			if modifier != '': field_type = modifier + ' ' + field_type
+			x['text'] = fmt % (field_type, name, number)
 		elif x['type'] == 'comm_line':
-			x['text'] = indent + '\t' + x['comm_line']
+			x['text'] = x['comm_line']
 		elif x['type'] == 'enum':
 			x['text'] = format_enum(x, indent+'\t')
 		elif x['type'] == 'message':
-			x['text'] = format_message(x, indent+'\t')
-			# print("formated message:")
-			# print(x['text'])
-
+			x['text'] = format_message(x, indent+'\t')		
 
 	maxl = max([len(x['text']) for x in entries if x['type']=='message_entry']+[0])
 	fmt = "%%-%ds %%s" % (maxl)
@@ -220,10 +221,14 @@ def format_message(st, indent='', assign_num=False):
 			x['text'] = text.rstrip() 
 
 	typ = 'oneof' if st['oneof'] else 'message'
-	lines = [indent + "{} {} {{".format(typ, st['name'])]
+	lines = ["{} {} {{".format(typ, st['name'])]
 	if st['comm'] != "":
-		lines.insert(0, indent+st['comm'])
-	lines += [x['text'] for x in entries] +  [indent+"}"]
+		lines.insert(0, st['comm'])
+	content = '\n'.join([x['text'] for x in entries])
+	if len(entries) != 0:
+		lines += ['\t'+l if l!='' else '' for l in content.split('\n')]
+
+	lines +=  ["}"]
 	return "\n".join(lines)
 
 	
@@ -255,24 +260,11 @@ def format_proto(source, assign_num=False):
 	return "\n".join(blocks)
 
 
-text = """message Request {
+text = """
+message LogInstallRsp {
 
-    
 
-    message LootInfo {      
-        oneof nested2 {	        
-	         int32  Id   = 1;
-	         string Name = 2;
-    	}
-    	int32  Id   = 1;
-         string Name = 2;
-    }
-    enum ExploreTimes {
-    Single = 1; // 探索一次
-    Ten    = 2; // 探索10次
-}
-	optional ReturnCode ReturnCode = 4;
-    optional LootInfo loot_info = 5;
+
 }"""
 
 if __name__ == '__main__':
