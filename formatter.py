@@ -62,6 +62,11 @@ pb_grammar = Grammar(
 )
 
 class ProtobufVisitor(NodeVisitor):
+
+	def __init__(self, proto3=False):
+		super().__init__()
+		self._proto3 = proto3
+
 	def generic_visit(self, node, visited_children):
 		return visited_children or node
 
@@ -69,7 +74,7 @@ class ProtobufVisitor(NodeVisitor):
 		return [x[0] for x in visited_children if x[0] is not None]
 
 	def visit_enum(self, node, visited_children):
-		return Node.NewEnum(visited_children[1], visited_children[3])
+		return Node.NewEnum(visited_children[1], visited_children[3], self._proto3)
 
 	def visit_ebody_seq(self, node, visited_children):
 		return [x[0] for x in visited_children if x[0] is not None]
@@ -101,7 +106,7 @@ class ProtobufVisitor(NodeVisitor):
 	def visit_mentry(self, node, visited_children):
 		n = len(visited_children)
 		_, modifier, field_type, _, name, _, number, _, comment = visited_children
-		return Node.NewMessageEntry(modifier, field_type, name, number, comment)
+		return Node.NewMessageEntry(modifier, field_type, name, number, comment, self._proto3)
 
 	def visit_option_mmodifier(self, node, visited_children):
 		visited_children.append('')
@@ -111,7 +116,7 @@ class ProtobufVisitor(NodeVisitor):
 		return visited_children[1][0].text
 
 	def visit_other(self, node, visited_children):
-		return Node.NewText(node.text)
+		return Node.NewText(node.text, self._proto3)
 
 	# visit base element
 	def visit_ident(self, node, visited_children):
@@ -188,9 +193,9 @@ def format_message(st, indent='', assign_num=False):
 	lines +=  ["}"]
 	return "\n".join(lines)
 	
-def format_proto(source, assign_num=False):
+def format_proto(source, assign_num=False, proto3=False):
 	ast = pb_grammar.parse(source)
-	pbv = ProtobufVisitor()
+	pbv = ProtobufVisitor(proto3)
 	out_put = pbv.visit(ast)
 	
 	blocks = []
@@ -215,6 +220,8 @@ def format_proto(source, assign_num=False):
 text = """
 //
 
+syntax="proto2";
+
 message TestMessage {
     enum ReturnCode {
         Ok = 10;
@@ -222,8 +229,8 @@ message TestMessage {
     }
 
     message LogInfo {
-        int64  InstallTime = 1;
-        string Ip = 2;
+        required int64  InstallTime = 1;
+        optional string Ip = 2;
         string DeviceModel = 3;
         string OsName = 4;
     }
@@ -241,7 +248,9 @@ if __name__ == '__main__':
 	ast = pb_grammar.parse(text)
 	pbv = ProtobufVisitor()
 	out_put = pbv.visit(ast)
-	print(out_put[2])
+	# print(out_put[2])
 	# print(json.dumps(out_put, indent='\t'))
 
-	print(format_proto(text, True))
+	print(format_proto(text, False, False))
+	print('===> proto3')
+	print(format_proto(text, False, True))

@@ -9,10 +9,13 @@ class Node(object):
 		self._text = ''
 		self._childs = []
 
-	def NewEnum(name, children):
+	def NewEnum(name, children, proto3=False):
 		node = Node(NodeType.ENUM)
 		node._name = name
 		node._childs = children
+		if proto3:
+			if node.min_number(NodeType.ENUM_ENTRY)!=0:
+				node._childs.insert(0, Node.NewEnumEntry(name+'_ZERO', 0))
 		return node
 
 	def NewEnumEntry(name, number, comm=''):
@@ -30,18 +33,23 @@ class Node(object):
 		node._oneof = oneof
 		return node
 
-	def NewMessageEntry(modifier, field_type, name, number, comm):
+	def NewMessageEntry(modifier, field_type, name, number, comm, proto3=False):
 		node = Node(NodeType.MESSAGE_ENTRY)
 		node._modifier = modifier
 		node._field_type = field_type
 		node._name = name
 		node._number = number
 		node._comm = comm
+		if proto3 and modifier != 'repeated':
+			node._modifier = ''
 		return node
 
-	def NewText(text):
+	def NewText(text, proto3=False):
 		node = Node(NodeType.TEXT)
-		node._text = text
+		if proto3 and text == 'syntax="proto2";':
+			node._text = 'syntax="proto3";'
+		else:
+			node._text = text
 		return node
 
 	def NewCommLine(comm):
@@ -140,6 +148,11 @@ class Node(object):
 			if e.type == NodeType.MESSAGE_ENTRY or e.type == NodeType.ENUM_ENTRY:
 				e.set_number(idx)
 				idx += 1
+
+	def min_number(self, typ):
+		l = [x.number for x in self.children if x.type==typ]
+		if len(l)==0: return -1
+		return min(l)
 
 	def to_json(self):
 		return json.dumps(self.dict, indent='\t')
