@@ -16,7 +16,7 @@ pb_grammar = Grammar(
 	enum                 = edeclare ident lbrace ebody_seq rbrace
 	edeclare             = none_or_ws "enum" must_ws_inline
 	ebody_seq            = (muti_emptyline / emptyline / comment / eentry)*
-	eentry               = none_or_ws ident equal number semi option_comm_line
+	eentry               = none_or_ws ident equal number option_semi option_comm_line
 
 	message              = mdeclare ident none_or_ws option_comm_line lbrace mbody_seq rbrace	
 	mdeclare             = none_or_ws ("message"/"oneof") must_ws_inline
@@ -30,6 +30,7 @@ pb_grammar = Grammar(
 	lbrace               = any_ws punctuation_lbrace
 	rbrace               = none_or_ws punctuation_rbrace	
 	equal                = none_or_ws punctuation_equal none_or_ws
+	option_semi          = semi?
 	semi                 = none_or_ws punctuation_semi none_or_ws	
 
 	option_comm_line     = comm_line?
@@ -224,8 +225,8 @@ syntax="proto2";
 
 message TestMessage {
     enum ReturnCode {
-        Ok = 10;
-        Failed = 11;
+        Ok = 0
+        Failed = 1
     }
 
     message LogInfo {

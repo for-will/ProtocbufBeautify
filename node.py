@@ -202,11 +202,5 @@ def main():
 	n = Node.NewEnumEntry('Ok', 3, '//okkk')
 	print(n)
 
-	# print(help(t))
-	# print(dir(EntryType))
-	# print(getattr(EntryType, 'MESSAGE'))
-
-	# print(type(EntryType.MESSAGE)==int)
-
 if __name__ == '__main__':
 	main()
