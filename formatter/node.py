@@ -109,7 +109,7 @@ class Node(object):
 		d['childs'] = [x.dict for x in d['childs']]
 		return d
 
-	def build_text(self, fmt=''):
+	def build_text(self, fmt='', def_modifier=''):
 		if self.type == NodeType.ENUM_ENTRY:
 			self._text = fmt % (self.name, self.number)
 
@@ -118,8 +118,12 @@ class Node(object):
 			name = self.name
 			field_type = self.field_type
 			number = self.number
-			if modifier != '': field_type = modifier + ' ' + field_type
-			self._text = fmt % (field_type, name, number)
+			if modifier == '': 
+				modifier = def_modifier
+			else:
+				modifier = modifier + ' '
+			# if modifier != '': field_type = modifier + ' ' + field_type
+			self._text = modifier + fmt % (field_type, name, number)
 
 		elif self.type == NodeType.COMM_LINE:
 			self._text = self._comm

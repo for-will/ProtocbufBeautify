@@ -1,8 +1,6 @@
-import sys
-import json
-
-from parsimonious.grammar import Grammar
-from parsimonious.nodes import NodeVisitor
+from parsimonious import NodeVisitor
+from parsimonious import Grammar
+	
 
 pb_grammar = Grammar(
 	r"""

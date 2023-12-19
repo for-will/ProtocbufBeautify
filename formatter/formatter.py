@@ -1,13 +1,14 @@
 import sys
 import json
 
-from parsimonious.grammar import Grammar
-from parsimonious.nodes import NodeVisitor
+from parsimonious import Grammar
+from parsimonious import NodeVisitor
+from .node import Node, NodeType
 
-try:
-	from node import Node, NodeType
-except (ImportError) as e:
-	from .node import Node, NodeType
+# try:
+# 	from node import Node, NodeType
+# except (ImportError) as e:
+# 	from .node import Node, NodeType
 
 pb_grammar = Grammar(
 	r"""
@@ -169,12 +170,15 @@ def format_message(st, indent='', assign_num=False):
 
 	modifier_len = max([len(x.modifier) for x in entries if x.type==NodeType.MESSAGE_ENTRY]+[0])
 	name_len = max([len(x.name) for x in entries if x.type==NodeType.MESSAGE_ENTRY]+[0])
-	type_len = max([len(x.field_type+x.modifier) for x in entries if x.type==NodeType.MESSAGE_ENTRY]+[0])
-	if modifier_len>0: type_len = type_len+1
+	type_len = max([len(x.field_type) for x in entries if x.type==NodeType.MESSAGE_ENTRY]+[0])
+	def_modifier = ''
+	if modifier_len>0: 
+		# type_len = type_len+1
+		def_modifier = ' '*9
 	fmt = "%%-%ds %%-%ds = %%d;" % (type_len, name_len)
 	for x in entries:
 		if x.type == NodeType.MESSAGE_ENTRY:
-			x.build_text(fmt)
+			x.build_text(fmt, def_modifier)
 		elif x.type == NodeType.COMM_LINE:
 			x.build_text()
 		elif x.type == NodeType.ENUM:
@@ -194,7 +198,7 @@ def format_message(st, indent='', assign_num=False):
 	lines +=  ["}"]
 	return "\n".join(lines)
 	
-def format_proto(source, assign_num=False, proto3=False):
+def format_proto(source, assign_num=False, proto3=True):
 	ast = pb_grammar.parse(source)
 	pbv = ProtobufVisitor(proto3)
 	out_put = pbv.visit(ast)
@@ -214,6 +218,7 @@ def format_proto(source, assign_num=False, proto3=False):
 			blocks.append(e.text)
 		else:
 			print(t)
+			pass
 
 	return "\n".join(blocks)
 

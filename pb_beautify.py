@@ -8,23 +8,23 @@ from package_control import sys_path
 import os
 import sys
 
-try:
-	from six import text_type
-	from parsimonious import NodeVisitor
+# try:
+# 	from six import text_type
+# 	from parsimonious import NodeVisitor
 	
-except (ImportError) as e:
-	dep_paths = sys_path.generate_dependency_paths(u'ProtocbufBeautify')
-	pkg_path = dep_paths['all'].rstrip('all')
-	sys_path.add(pkg_path)
-	from six import text_type
-	from parsimonious import NodeVisitor
+# except (ImportError) as e:
+# 	dep_paths = sys_path.generate_dependency_paths(u'ProtocbufBeautify')
+# 	pkg_path = dep_paths['all'].rstrip('all')
+# 	sys_path.add(pkg_path)
+# 	from six import text_type
+# 	from parsimonious import NodeVisitor
 	
 try:
-	from formatter import format_proto
-	from auto_number import number_lines
+	from formatter.formatter import format_proto
+	from formatter.auto_number import number_lines
 except (ImportError) as e:
-	from .formatter import format_proto
-	from .auto_number import number_lines
+	from .formatter.formatter import format_proto
+	from .formatter.auto_number import number_lines
 
 
 class PbBeautifyCommand(sublime_plugin.TextCommand):
